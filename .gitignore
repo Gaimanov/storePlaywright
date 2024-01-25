@@ -1,0 +1,10 @@
+allure-report
+allure-results
+.pytest_cache
+.idea
+.git
+.ruff_cache
+config
+Pipfile
+Pipfile.lock
+.pre-commit-config.yaml

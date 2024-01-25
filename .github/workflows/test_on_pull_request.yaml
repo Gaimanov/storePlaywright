@@ -1,0 +1,55 @@
+name: Run UI Tests On Pull Request
+
+on:
+  pull_request:
+    branches:
+      - master
+    types:
+      - opened
+
+jobs:
+  run_tests_on_pull_request:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install pip
+        run: python -m ensurepip --default-pip
+
+      - name: Install pipenv
+        run: pip install pipenv
+
+      - name: Install dependencies
+        run: pipenv install --dev
+
+      - name: Install Browsers using Playwright
+        run: npx playwright install
+
+      - name: Set up environment variables
+        run: echo "DATE_TIME=$(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
+
+      - name: Run tests in Chrome
+        run: pipenv run pytest --numprocesses auto --browser chromium --reruns 1 --base-url=https://www.saucedemo.com --html=test_results_chrome.html
+
+      - name: Run tests in Firefox
+        run: pipenv run pytest --numprocesses auto --browser firefox --reruns 1 --base-url=https://www.saucedemo.com --html=test_results_firefox.html
+
+      - name: Send Pytest report by email
+        if: always() # Send report always, regardless of test results
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_PASSWORD }}
+          subject: Pytest Report on PULL REQUEST - ${{ github.repository }} - ${{ github.sha }}
+          body: "Pytest report for the UI tests. Ran on PULL REQUEST action at ${{ env.DATE_TIME }}."
+          from: bulletilya@gmail.com
+          to: ilyagaimanovai@gmail.com
+          attachments: test_results_chrome.html, test_results_firefox.html
